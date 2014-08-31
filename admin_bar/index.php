@@ -401,7 +401,6 @@ class Plugin_admin_bar extends Plugins {
      */
 	protected static function onViewLoadTemplate($content) {
         
-        
 		$errors = '';
 		foreach(self::$errors as $error) {
 			$errors .= print_r($error, 1);
