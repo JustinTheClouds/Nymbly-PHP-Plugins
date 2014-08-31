@@ -90,7 +90,7 @@ class Plugin_admin_bar extends Plugins {
 		'Docs'     => '{$admin_bar_docs}',
 		'Tools'    => '{$admin_bar_tools}'
 	);
-	
+    
     /**
      * On plugin initialize
      * 
@@ -98,14 +98,25 @@ class Plugin_admin_bar extends Plugins {
      * 
      * @return void
      */
-	protected static function onPluginsInit() {
-		
-		// Unregister the plugin if it is not being used
+    public function __construct() {
+        
+        // Unregister the plugin if it is not being used
 		if(!App::isDeveloper()) {
 			self::unRegisterPlugin();
 			return;
 		}
 		
+        // Add styles
+        self::setPluginSettings('styles', array(
+            'css/styles.css'
+        ));
+        
+        // Add scripts
+        self::setPluginSettings('scripts', array(
+            '//code.jquery.com/jquery-1.11.0.min.js',
+            'js/script.js'
+        ));
+        
 		// Setup tabs
 		self::setUpTabs();
 		
@@ -124,9 +135,9 @@ class Plugin_admin_bar extends Plugins {
 		
         // Grab update panel content
 		self::assign('admin_bar_updates', self::getUpdates());
-		
-	}
-    
+        
+    }
+	 
     private static function clearCacheAction() {
         App::_unset(null, 'session');
         self::$tools = "Cached cleared";
@@ -388,8 +399,7 @@ class Plugin_admin_bar extends Plugins {
      * 
      * @return <type>
      */
-	protected static function onViewGetContent($content) {
-		
+	protected static function onViewLoadTemplate($content) {
 		$errors = '';
 		foreach(self::$errors as $error) {
 			$errors .= print_r($error, 1);
@@ -399,7 +409,7 @@ class Plugin_admin_bar extends Plugins {
 		self::assign('admin_bar_events', implode('<hr />', self::$events));
 		self::assign('admin_bar_stats', implode('<hr />', self::$stats));
 	
-		return $content . self::$adminBar;
+		return str_replace('{$output_content}', '{$output_content}' . self::$adminBar, $content);
 	}
 	
     /**
