@@ -61,7 +61,7 @@ class Plugin_debug_trace extends Plugins {
 		array_shift($args);
 
 		// Should we only debug a specific event
-		if($single = App::getRequest('get.debug_trace_event')) {
+		if($single = App::get('get.debug_trace_event', 'request')) {
 			if($event == $single) {
 				call_user_func_array(array('self', 'logEvent'), $args);
 			}

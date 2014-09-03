@@ -117,13 +117,9 @@ class Plugin_admin_bar extends Plugins {
             'js/script.js'
         ));
         
-		// Setup tabs
-		self::setUpTabs();
-		
-		self::$adminBar .= '</div>';
         
         // Check if we are running an admin_bar_action
-        $action = App::getRequest('get.admin_bar_action');
+        $action = self::get('action', 'request.get');
         if($action) {
             // Does action exist?
             if(method_exists(__CLASS__, $action . 'Action')) {
@@ -133,9 +129,13 @@ class Plugin_admin_bar extends Plugins {
             
         }
 		
-        // Grab update panel content
-		self::assign('admin_bar_updates', self::getUpdates());
+        // Check for updates
+        self::getUpdates();
         
+		// Setup tabs
+		self::setUpTabs();
+		
+		self::$adminBar .= '</div>';
     }
 	 
     private static function clearCacheAction() {
@@ -146,155 +146,85 @@ class Plugin_admin_bar extends Plugins {
     }
     
     /**
-     * Get the HTML for the update panel
-     * 
-     * @return string HTML output for the update panel
+     * Checks for updates and build the update panel if updates available
      * 
      * @author Justin Carlson
      * @date 8/19/2014
      */
     private static function getUpdates() {
-        
-        $output = '';
-        
-        // If we are not currently updating
-        if(!App::getRequest('get.update')) {
             
-            // Check for updates
-            $updates = self::checkForUpdates();
-            
-            // If we have any updates available
-            if($updates['total']) {
+        // Check for updates
+        $updates = self::checkForUpdates();
+
+        // If we have any updates available
+        if($updates['total']) {
+
+            $output = '<form action="?'. self::inputName('action') . '=beginUpdating&'. self::inputName('dry_run') . '=1" method="post">';
+
+            // Output the title message
+            $output .= '<div class="' . self::prefix('tab-title') . '">' . sprintf(self::_('%s update is available', '%s updates are available', $updates['total']), $updates['total']) . '</div>';
+
+            // Build the update list
+            $output .= '<table class="' . self::prefix('table') . '">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" /></th>
+                                    <th>Name</th>
+                                    <th>New Version</th>
+                                    <th>Current Version</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+
+            // Loop types of updates
+            foreach($updates as $type => $update) {
+                if($type == 'total') continue;
+                // Output update type section
+                $output .= '    <tr>
+                                    <td>' . ucfirst($type) . '</td>
+                                </tr>';
                 
-                // Output the title message
-                $output .= '<div class="' . self::prefix('tab-title') . '">' . sprintf(self::_('%s update is available', '%s updates are available', $updates['total']), $updates['total']) . '</div>';
-                
-                // Build the update list
-                $output .= '<table class="' . self::prefix('table') . '">
-                                <thead>
-                                    <tr>
-                                        <th><input type="checkbox" name="admin_bar_updates_select_all" /></th>
-                                        <th>New Version</th>
-                                        <th>Current Version</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>';
-                
-                // Loop types of updates
-                foreach($updates as $type => $update) {
-                    if($type == 'total') continue;
-                    // Output update type section
-                    $output .= '    <tr>
-                                        <td>' . ucfirst($type) . '</td>
-                                    </tr>';
-                    // Loop updates for type
-                    if(isset($update[0])) {
+                foreach($update as $name => $plugin) {
                         
-                        
-                            
-                    } else {
-                        
-                        $output .= '<tr>
-                                        <td><input type="checkbox" name="" /></td>
-                                        <td>' . $update['version'] . '</td>
-                                    </tr>';
-                        
-                    }
+                    $output .= '<tr>
+                                    <td><input type="checkbox" name="' . self::inputName('updates.' . $type . '.' . $name) . '" /></td>
+                                    <td>' . $name . '</td>
+                                    <td>' . $plugin['version'] . '</td>
+                                    <td>' . $plugin['current']['version'] . '</td>
+                                </tr>';
                 }
-                                
-                // Close table
-                $output .= '
-                                </tbody>
-                            </table>';
-                
-                // Add update button
-                $output .= '<a href="?admin_bar_action=beginUpdating" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '">' . self::_('Run Updates') . '</a>';
-                
-            // EVerything is up to date
-            } else {
-                
-                $output .= '<div class="admin-bar-tab-title">' . self::_('Everything is up to date') . '</div>';
-                
+
             }
+
+            // Close table
+            $output .= '
+                            </tbody>
+                        </table>';
+
+            // Add update button
+            $output .= '<input type="submit" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '" value="' . self::_('Run Updates') . '" />';
             
+            $output .= '</form>';
+            
+            self::assign('admin_bar_updates', $output);
+
+        // EVerything is up to date
+        } else {
+
+            unset(self::$defaultTabs['Updates']);
+
         }
-        
-        return $output;
         
     }
     
     private static function beginUpdatingAction() {
         
-        if(!App::get('admin_bar_running_update')) {
-            
-            // Start the update
-            App::set('admin_bar_running_update', true);
-
-            // Start the update log
-            App::set('admin_bar_update_status', array('Beginning core update', 'Checking for core updates'));
-            
-            // Check for updates
-            $updates = self::checkForUpdates();
-            
-            // Checking for core update
-            if(is_array($updates['core'])) {
-            
-                // Backup current library
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Backing up core files')));
-
-                if(!is_dir(DIR_ROOT.DS.'backups')) mkdir(DIR_ROOT.DS.'backups');
-                // Create dir for this type of backup
-                if(!is_dir(DIR_ROOT.DS.'backups'.DS.'core')) mkdir(DIR_ROOT.DS.'backups'.DS.'core');
-                // Create zip for this backup instance
-                $zip = new ZipArchive();
-                $zipRet = $zip->open(DIR_ROOT.DS.'backups'.DS.'core'.DS.time().'.zip', ZipArchive::CREATE);
-                if ($zipRet !== TRUE) {
-                    trigger_error(sprintf(self::_('Failed with code %d'), $zipRet));
-                } else {
-                    $zip->addGlob('library'.DS.'*');
-                    //$zip->close();
-                }
-
-                sleep(1);
-
-                // Download update
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Downloading updated core files')));
-                $updatedZip = file_get_contents($updates['core']['download']);
-                
-                // Save downlaod
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Saving downloaded zip files')));
-                if(!is_dir(DIR_ROOT.DS.'updates')) mkdir(DIR_ROOT.DS.'updates');
-                //file_put_contents(DIR_ROOT.DS.'updates'.DS.$updates['core']['version'].'.zip', $updatedZip);
-                
-                // Extract zip
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Extracting zip files')));
-                $updatedZip = new ZipArchive();
-                $updatedZip->open(DIR_ROOT.DS.'updates'.DS.$updates['core']['version'].'.zip');
-                $updatedZip->extractTo(DIR_ROOT.DS.'updates');
-                
-                // Copy library directory
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Updating core files')));
-                foreach ($iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(DIR_ROOT.DS.'updates'.DS.'Nymbly-PHP-master'.DS.'library', RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $item) {
-                    if($item->isDir()) {
-                        mkdir(DIR_ROOT.DS.'updates'.DS.'testing'.DS.$iterator->getSubPathName());
-                    } else {
-                        copy($item, DIR_ROOT.DS.'updates'.DS.'testing'.DS.$iterator->getSubPathName());
-                    }
-                }                                                    
-                
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Updating core version')));
-                
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Deleting downloaded files')));
-                
-            }
-            
-            var_dump(App::get('admin_bar_update_status'));
-            
-            App::set('admin_bar_running_update', false);
-            
-        }
-        App::set('admin_bar_running_update', false);
+        require_once(self::getPluginPath() . DS . 'updater.php');
+        
+        Plugin_admin_bar_updater::begin();
+        //var_dump(Plugin_admin_bar_updater::status());
+        
     }
     
     private static function checkUpdatingStatusAction() {
@@ -302,7 +232,14 @@ class Plugin_admin_bar extends Plugins {
     }
     
     /**
-     * Checks core, plugins, controllers for updates
+     * Checks periodically for updates.
+     * 
+     * A session var will be stored fo 12 hours to avoid checking every request.
+     * Updates will be checked twice daily.
+     * 
+     * Note: Updates are checked on on page load, NOT throuh a cron. So if the website is not loaded all day,
+     * then the updater will not check until the next page visit. And updates are only checked if a developer
+     * is loading the page since only a developer can run the updater.
      * 
      * @return array Returns array of updates found with the latest versions and dowload urls
      * 
@@ -311,19 +248,19 @@ class Plugin_admin_bar extends Plugins {
      */
     private static function checkForUpdates() {
         
-        $updates = array(
-            'core' => false,
-            'total' => 0
-        );
+        if(!self::get('updates_last_check')) {
         
-        // Check core for updates
-        $currentInfo = json_decode(file_get_contents(DIR_ROOT.DS.'version.json'), true);
-        $serverInfo = json_decode(file_get_contents($currentInfo['check']), true);
-        
-        // Is the server version newer
-        if(version_compare($serverInfo['version'], $currentInfo['version']) === 1) {
-            $updates['core'] = $serverInfo;
-            $updates['total']++;
+            require_once(self::getPluginPath().DS.'updater.php');
+            
+            $updates = Plugin_admin_bar_updater::check();
+            
+            // TODO Set timeout var for 12 hours
+            self::set('updates_last_check', $updates, 'session', 15);
+            
+        } else {
+         
+            $updates = self::get('updates_last_check');
+            
         }
         
         return $updates;
@@ -388,7 +325,7 @@ class Plugin_admin_bar extends Plugins {
         
         // Create Tools content
         $out = self::$tools;
-        $out .= '<a href="?admin_bar_action=clearCache">Clear Cache</a>';
+        $out .= '<a href="?' . self::inputName('action') . '=clearCache">Clear Cache</a>';
         self::assign('admin_bar_tools', $out);
     }
 	
@@ -517,7 +454,7 @@ class Plugin_admin_bar extends Plugins {
 		array_shift($args);
 
 		// Should we only debug a specific event
-		if($single = App::getRequest('get.debug_trace_event')) {
+		if($single = App::get('get.debug_trace_event', 'request')) {
 			if($event == $single) {
 				call_user_func_array(array('self', 'logEvent'), $args);
 			}
@@ -561,6 +498,22 @@ class Plugin_admin_bar extends Plugins {
      */
     private static function prefix($text) {
         return str_replace('_', '-', strtolower(self::getPluginName() . '-' . $text));
+    }
+    
+    /**
+     * Prefixes an input fields name
+     * 
+     * @param   String $name       The fields name
+     * @param   String $group=null If the filed should be sub grouped
+     * 
+     * @returns String   Returns the prefixed input name
+     */
+    private static function input($name, $group=null) {
+        if($group) {
+            return "admin_bar[$group][$name]";
+        } else {
+            return "admin_bar[$name]";
+        }
     }
 	
 }
