@@ -159,7 +159,7 @@ class Plugin_admin_bar extends Plugins {
         // If we have any updates available
         if($updates['total']) {
 
-            $output = '<form action="?'. self::inputName('action') . '=beginUpdating&'. self::inputName('dry_run') . '=1" method="post">';
+            $output = '<form action="?'. self::inputName('action') . '=beginUpdating' . ( App::get('appName', 'configs') == 'Nymbly PHP' ? '&'. self::inputName('dry_run') . '=1' : '' ) . '" method="post">';
 
             // Output the title message
             $output .= '<div class="' . self::prefix('tab-title') . '">' . sprintf(self::_('%s update is available', '%s updates are available', $updates['total']), $updates['total']) . '</div>';

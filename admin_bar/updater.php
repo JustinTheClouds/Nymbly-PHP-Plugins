@@ -90,6 +90,12 @@ class Plugin_admin_bar_updater {
      */
     public static function begin() {
         
+        // Don't allow master build to update itself
+        if(App::get('appName', 'configs') == 'Nymbly PHP') {
+            trigger_error(App::_('', 'Master build cannot update itself'));
+            return;
+        }
+        
         $check = self::check();
         
         // If no updates are available then do nothing
@@ -104,7 +110,7 @@ class Plugin_admin_bar_updater {
         // Clear update log
         self::set('update_status', array());
         if(self::get('dry_run', 'request.get')) self::log('**** DRYRUN ****');
-        self::log('Beginning update');
+        self::log('Beginning updates');
         
         // Loop selected updates
         $selected = self::get('updates', 'request.post');
@@ -113,6 +119,34 @@ class Plugin_admin_bar_updater {
             
             // Loop updates for this
             foreach($updates as $name => $update) {
+                
+                // Type specifc configs
+                switch($type) {
+                    case 'core':
+                        $dirFrom = 'library';
+                        $extract = 'Nymbly-PHP-master/library';
+                        $extractTo = DIR_ROOT.DS.'library'.DS;
+                    break;
+                    case 'plugins':
+                        $dirFrom = 'application'.DS.'plugins'.DS.$name.DS;
+                        $extract = $name;
+                        $extractTo = DIR_PLUGINS.DS.$name.DS;
+                    break;
+                    default:
+                        self::$_error = sprintf(self::_('No update support for %s:%s yet'), $type, $name);
+                        self::handleError(sprintf(Plugin_admin_bar::_('Error updating up %s:%s - Cancelling this update'), $type, $name));
+                        continue;
+                    break;
+                }
+                
+                self::log(sprintf(self::_('Updating %s:%s'), $type, $name));
+                
+                // Make sure an update for this selected update actually doe exist
+                if(!isset($check[$type][$name])) {
+                    self::$_error = sprintf(self::_('No update exists for %s:%s'), $type, $name);
+                    self::handleError(sprintf(Plugin_admin_bar::_('Error updating up %s:%s - Cancelling this update'), $type, $name));
+                    continue;
+                }
 
                 // Run backup for this update
                 self::backup($type, $name, $check[$type][$name]);
@@ -121,7 +155,7 @@ class Plugin_admin_bar_updater {
                 if(self::handleError(sprintf(Plugin_admin_bar::_('Error backing up %s:%s - Cancelling this update'), $type, $name))) continue;
                 
                 // Download this update
-                self::download($type, $name, $check[$type][$name]);
+                self::download($type, $name, $check[$type][$name], $extract, $extractTo);
                 
                 // Break point: Check for error
                 if(self::handleError(sprintf(Plugin_admin_bar::_('Error downloading up %s:%s - Cancelling this update'), $type, $name))) continue;
@@ -133,59 +167,12 @@ class Plugin_admin_bar_updater {
         }
         
         // End updates
-        self::log('Ending update');
+        self::log('Finishing updates');
         
         var_dump(self::status());
         
         self::_unset('updating_in_progress');
         self::_unset('update_status');
-        
-        return;
-        
-        if(!self::get('admin_bar_running_update')) {
-            
-            // Checking for core update
-            if(is_array($updates['core'])) {
-            
-                // Download update
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Downloading updated core files')));
-                $updatedZip = file_get_contents($updates['core']['download']);
-                
-                // Save downlaod
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Saving downloaded zip files')));
-                if(!is_dir(DIR_ROOT.DS.'updates')) mkdir(DIR_ROOT.DS.'updates');
-                //file_put_contents(DIR_ROOT.DS.'updates'.DS.$updates['core']['version'].'.zip', $updatedZip);
-                
-                // Extract zip
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Extracting zip files')));
-                $updatedZip = new ZipArchive();
-                $updatedZip->open(DIR_ROOT.DS.'updates'.DS.$updates['core']['version'].'.zip');
-                $updatedZip->extractTo(DIR_ROOT.DS.'updates');
-                
-                // Copy library directory
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Updating core files')));
-                foreach ($iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(DIR_ROOT.DS.'updates'.DS.'Nymbly-PHP-master'.DS.'library', RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $item) {
-                    if($item->isDir()) {
-                        mkdir(DIR_ROOT.DS.'library'.DS.DS.$iterator->getSubPathName());
-                    } else {
-                        copy($item, DIR_ROOT.DS.'library'.DS.$iterator->getSubPathName());
-                    }
-                }                                                    
-                
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('Updating core version')));
-                copy(DIR_ROOT.DS.'updates'.DS.'Nymbly-PHP-master'.DS.'version.json', DIR_ROOT.DS.'version.json');
-                
-                App::set('admin_bar_update_status', array_merge(App::get('admin_bar_update_status'), array('TODO Deleting downloaded files')));
-                
-            }
-            
-            var_dump(App::get('admin_bar_update_status'));
-            
-            App::set('admin_bar_running_update', false);
-            
-        }
-        App::set('admin_bar_running_update', false);
-        
     }
  
     /**
@@ -230,7 +217,7 @@ class Plugin_admin_bar_updater {
             $zipRet = $zip->open($file, ZipArchive::CREATE);
 
             if($zipRet !== TRUE) {
-                self::$_error = sprintf(sprintf(Plugin_admin_bar::_('Backup creation for %s:%s failed with code %d'), $type, $name, $zipRet));
+                self::$_error = sprintf(Plugin_admin_bar::_('Backup creation for %s:%s failed with code %d'), $type, $name, $zipRet);
             } else {
                 self::addDirectoryToZip($zip, $dirFrom, strlen($dirFrom) + 1);
             }
@@ -262,7 +249,7 @@ class Plugin_admin_bar_updater {
             
             // Does the backed up file exist
             if(!file_exists($file)) {
-                self::$_error = sprintf(sprintf(Plugin_admin_bar::_('Backup creation for %s:%s failed. The backup file does not exist.'), $type, $name));
+                self::$_error = sprintf(Plugin_admin_bar::_('Backup creation for %s:%s failed. The backup file does not exist.'), $type, $name);
                 return false;
             }
 
@@ -271,7 +258,7 @@ class Plugin_admin_bar_updater {
             $zipRet = $zip->open($file);
 
             if($zipRet !== TRUE) {
-                self::$_error = sprintf(sprintf(Plugin_admin_bar::_('Backup creation for %s:%s failed. Error opening backup with code %d'), $type, $name, $zipRet));
+                self::$_error = sprintf(Plugin_admin_bar::_('Backup creation for %s:%s failed. Error opening backup with code %d'), $type, $name, $zipRet);
                 return false;
             }
 
@@ -280,7 +267,7 @@ class Plugin_admin_bar_updater {
                 // Try to read file from zip
                 if($zip->locateName(substr($file, strlen($dirFrom) + 1)) === false) {
                     // If file wasn't found in back up, return false
-                    self::$_error = sprintf(sprintf(Plugin_admin_bar::_('Backup missing file: %s'), $file));
+                    self::$_error = sprintf(Plugin_admin_bar::_('Backup missing file: %s'), $file);
                     return false;
                 }
             }
@@ -297,18 +284,18 @@ class Plugin_admin_bar_updater {
      * @param   String   $name The name of the plugin to backup or null for library
      * @param   Array    $name The update version info
      */
-    private static function download($type, $name, $update) {
+    private static function download($type, $name, $update, $extract, $extractTo) {
         
         self::log(sprintf(self::_('Downloading %s:%s'), $type, $name));
         
         self::log(sprintf(self::_('Download From: %s'), $update['download']));
         
-        // Check for tmp dir
-        $dir = DIR_ROOT.DS.'tmp';
-        if(!is_dir($dir)) mkdir($dir);
-        
         // Don't download updates on dry run
         if(!self::get('dry_run', 'request.get')) {
+            
+            // Check for tmp dir
+            $dir = DIR_ROOT.DS.'tmp';
+            if(!is_dir($dir)) mkdir($dir);
             
             // Download update to temp file
             $tempFile = tempnam($dir, 'NYMBLY');
@@ -316,21 +303,31 @@ class Plugin_admin_bar_updater {
 
             // Open updated zip
             $zip = new ZipArchive();
-            if($adminBarZip->open($adminBar)) {
-
+            $zipReturn = $zip->open($tempFile);
+            if($zipReturn !== true) {
+                self::$_error = sprintf(Plugin_admin_bar::_('Download for %s:%s failed. Error opening download with code %d'), $type, $name, $zipRet);
+                return false;
             }
+            
+            self::log(sprintf(self::_('Delete files from %s'), $extractTo));
+            
+            // Delete old files
+            self::deleteFromDirectory($extractTo);
 
+            self::log(sprintf(self::_('Extract folder: %s into %s'), $extract, $extractTo));
+            
             // Extract updated zip to overwrite old files
+            self::extractDirectoryTo($zip, $extract, $extractTo);
+            
+            // Close zip
+            $zip->close();
             
             // Delete temp file
             unlink($tempFile);
+            
+            // Delete tmp dir if empty
+            if(count(scandir($dir)) == 2) rmdir($dir);
         }
-        
-        // Check for deleted files
-        
-        // Delete tmp dir if empty
-        if(count(scandir($dir)) == 2) rmdir($dir);
-        
     }
     
     private static function updateVersion($update) {
@@ -350,6 +347,40 @@ class Plugin_admin_bar_updater {
             else
                 $zip->addFile($file, substr($file, $base));
         }
+    }
+    
+    /**
+     * Extracts a specific directory from an archive to the specified path
+     * 
+     * @param ZipArchive $zip The zip archive to extract from
+     * @param String $dir The directory to extract
+     * @param String $to  The directory to extract to
+     */
+    private static function extractDirectoryTo($zip, $dir, $to) {
+        for($i = 0; $i < $zip->numFiles; $i++) {
+            $entry = $zip->getNameIndex($i);
+            //Use strpos() to check if the entry name contains the directory we want to extract
+            if (strpos($entry, $dir) !== false) {
+                // Extract the file to folder
+                var_dump($to . substr($entry, strlen($dir) + 1));
+                //file_put_contents($to.$entry, $zip->getFromIndex($i));
+            }
+        }
+    }
+    
+    /**
+     * Deletes all files in directory recursively
+     * 
+     * @param String $dir The directory to delete all files from
+     */
+    private static function deleteFromDirectory($dir) {
+        foreach ($iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $item) {
+            if($item->isDir()) {
+                rmdir($dir.$iterator->getSubPathName());
+            } else {
+                unlink($dir.$iterator->getSubPathName());
+            }
+        }                                                    
     }
     
     /**
@@ -380,6 +411,7 @@ class Plugin_admin_bar_updater {
         if(self::$_error) {
             self::log(self::$_error);
             self::log($breakMessage);
+            self::$_error = null;
             return true;
         }
         return false;
