@@ -101,12 +101,13 @@ class Plugin_admin_bar_updater {
         // If no updates are available then do nothing
         if(!$check['total']) return;
         
-        // Check if we are already updating
-        if(self::get('updating_in_progress')) return;
-        
+        // Close session write so status log can be checked ayncly
         session_write_close();
         
-        // This create a new update log
+        // If we are already updating return;
+        if(file_exists(Plugin_admin_bar::getPluginPath().DS.'current-status.json')) return;
+        
+        // This creates a new update log
         if(self::get('dry_run', 'request.get')) self::log('**** DRYRUN ****');
         self::log('Beginning updates');
         
@@ -314,7 +315,7 @@ class Plugin_admin_bar_updater {
             self::log(sprintf(self::_('Delete files from %s'), $extractTo));
             
             // Delete old files
-            self::deleteFromDirectory($extractTo);
+            self::deleteFromDirectory($extractTo, $update['protect']);
 
             self::log(sprintf(self::_('Extract folder: %s into %s'), $extract, $extractTo));
             
@@ -363,6 +364,8 @@ class Plugin_admin_bar_updater {
             $entry = $zip->getNameIndex($i);
             // Use strpos() to check if the entry name contains the directory we want to extract
             if (strpos($entry, $dir) !== false && !empty(pathinfo($entry, PATHINFO_EXTENSION))) {
+                // Create directory path if it does not exist
+                if(!is_dir(dirname($to . substr($entry, strlen($dir) + 1)))) mkdir(dirname($to . substr($entry, strlen($dir) + 1)), 0755, true);
                 // Extract the file to folder
                 file_put_contents($to . substr($entry, strlen($dir) + 1), $zip->getFromIndex($i));
             }
@@ -370,12 +373,16 @@ class Plugin_admin_bar_updater {
     }
     
     /**
-     * Deletes all files in directory recursively
+     * Deletes all files in directory recursively except protected files
+     * defined in version.json
      * 
      * @param String $dir The directory to delete all files from
+     * @param Array  $protected An array of files to protect (will not be deleted)
      */
-    private static function deleteFromDirectory($dir) {
+    private static function deleteFromDirectory($dir, $protected) {
         foreach ($iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $item) {
+            // Skip protected files
+            if(in_array($dir.$iterator->getSubPathName(), $protected)) continue;
             if($item->isDir()) {
                 rmdir($dir.$iterator->getSubPathName());
             } else {
