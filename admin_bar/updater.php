@@ -126,7 +126,7 @@ class Plugin_admin_bar_updater {
                             $extractTo = DIR_ROOT.DS.'library'.DS;
                         break;
                         case 'plugins':
-                            $dirFrom = 'application'.DS.'plugins'.DS.$name.DS;
+                            $dirFrom = 'application'.DS.'plugins'.DS.$name;
                             $extract = $name;
                             $extractTo = DIR_PLUGINS.DS.$name.DS;
                         break;
@@ -264,6 +264,8 @@ class Plugin_admin_bar_updater {
 
             // Loop original directory
             foreach(glob($dirFrom . '/*') as $file) {
+                // Skip folders, they will be updated automatically when files are verified
+                if(empty(pathinfo(substr($file, strlen($dirFrom) + 1), PATHINFO_EXTENSION))) continue;
                 // Try to read file from zip
                 if($zip->locateName(substr($file, strlen($dirFrom) + 1)) === false) {
                     // If file wasn't found in back up, return false
