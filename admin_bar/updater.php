@@ -408,6 +408,11 @@ class Plugin_admin_bar_updater {
         return $log;
     }
     
+    /**
+     * Stores the update in a history log
+     * 
+     * @param Array $log The current update log to add to the history log
+     */
     private static function storeLog($log) {
         if(file_exists(Plugin_admin_bar::getPluginPath().DS.'update-history.json')) {
             $history = json_decode(file_get_contents(Plugin_admin_bar::getPluginPath().DS.'update-history.json'), true);
