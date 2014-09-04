@@ -137,6 +137,13 @@ class Plugin_admin_bar extends Plugins {
 		
 		self::$adminBar .= '</div>';
     }
+    
+    public static function assign() {
+        $args = func_get_args();
+        if(!isset($args[2])) array_push($args, null);
+        if(!isset($args[3])) array_push($args, array('get', 'post'));
+        call_user_func_array(array('parent', 'assign'), $args);
+    }
 	 
     private static function clearCacheAction() {
         App::_unset(null, 'session');
@@ -219,16 +226,17 @@ class Plugin_admin_bar extends Plugins {
     }
     
     private static function beginUpdatingAction() {
-        
         require_once(self::getPluginPath() . DS . 'updater.php');
-        
         Plugin_admin_bar_updater::begin();
-        //var_dump(Plugin_admin_bar_updater::status());
-        
     }
     
     private static function checkUpdatingStatusAction() {
-        var_dump(App::get(null));
+        require_once(self::getPluginPath() . DS . 'updater.php');
+        $status = Plugin_admin_bar_updater::status();
+        View::assign('status', $status);
+        if(empty($status)) {
+            View::assign('completed', true);
+        }
     }
     
     /**

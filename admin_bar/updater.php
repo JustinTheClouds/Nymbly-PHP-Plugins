@@ -91,7 +91,7 @@ class Plugin_admin_bar_updater {
     public static function begin() {
         
         // Don't allow master build to update itself
-        if(App::get('appName', 'configs') == 'Nymbly PHP') {
+        if(App::get('appName', 'configs') == 'Nymbly PHP' && !self::get('dry_run', 'request.get')) {
             trigger_error(App::_('', 'Master build cannot update itself'));
             return;
         }
@@ -104,75 +104,75 @@ class Plugin_admin_bar_updater {
         // Check if we are already updating
         if(self::get('updating_in_progress')) return;
         
-        // Begin updating process, timeout in case something errors out, an update can be attemped again in an hour
-        self::set('updating_in_progress', true, 'session', 3600);
+        session_write_close();
         
-        // Clear update log
-        self::set('update_status', array());
+        // This create a new update log
         if(self::get('dry_run', 'request.get')) self::log('**** DRYRUN ****');
         self::log('Beginning updates');
         
         // Loop selected updates
         $selected = self::get('updates', 'request.post');
-        
-        foreach($selected as $type => $updates) {
-            
-            // Loop updates for this
-            foreach($updates as $name => $update) {
-                
-                // Type specifc configs
-                switch($type) {
-                    case 'core':
-                        $dirFrom = 'library';
-                        $extract = 'Nymbly-PHP-master/library';
-                        $extractTo = DIR_ROOT.DS.'library'.DS;
-                    break;
-                    case 'plugins':
-                        $dirFrom = 'application'.DS.'plugins'.DS.$name.DS;
-                        $extract = $name;
-                        $extractTo = DIR_PLUGINS.DS.$name.DS;
-                    break;
-                    default:
-                        self::$_error = sprintf(self::_('No update support for %s:%s yet'), $type, $name);
+        if($selected) {
+            foreach($selected as $type => $updates) {
+
+                // Loop updates for this
+                foreach($updates as $name => $update) {
+
+                    // Type specifc configs
+                    switch($type) {
+                        case 'core':
+                            $dirFrom = 'library';
+                            $extract = 'Nymbly-PHP-master/library';
+                            $extractTo = DIR_ROOT.DS.'library'.DS;
+                        break;
+                        case 'plugins':
+                            $dirFrom = 'application'.DS.'plugins'.DS.$name.DS;
+                            $extract = $name;
+                            $extractTo = DIR_PLUGINS.DS.$name.DS;
+                        break;
+                        default:
+                            self::$_error = sprintf(self::_('No update support for %s:%s yet'), $type, $name);
+                            self::handleError(sprintf(Plugin_admin_bar::_('Error updating up %s:%s - Cancelling this update'), $type, $name));
+                            continue;
+                        break;
+                    }
+
+                    self::log(sprintf(self::_('Updating %s:%s'), $type, $name));
+                    
+                    sleep(1);
+
+                    // Make sure an update for this selected update actually doe exist
+                    if(!isset($check[$type][$name])) {
+                        self::$_error = sprintf(self::_('No update exists for %s:%s'), $type, $name);
                         self::handleError(sprintf(Plugin_admin_bar::_('Error updating up %s:%s - Cancelling this update'), $type, $name));
                         continue;
-                    break;
-                }
-                
-                self::log(sprintf(self::_('Updating %s:%s'), $type, $name));
-                
-                // Make sure an update for this selected update actually doe exist
-                if(!isset($check[$type][$name])) {
-                    self::$_error = sprintf(self::_('No update exists for %s:%s'), $type, $name);
-                    self::handleError(sprintf(Plugin_admin_bar::_('Error updating up %s:%s - Cancelling this update'), $type, $name));
-                    continue;
-                }
+                    }
 
-                // Run backup for this update
-                self::backup($type, $name, $check[$type][$name]);
-                
-                // Break point: Check for error
-                if(self::handleError(sprintf(Plugin_admin_bar::_('Error backing up %s:%s - Cancelling this update'), $type, $name))) continue;
-                
-                // Download this update
-                self::download($type, $name, $check[$type][$name], $extract, $extractTo);
-                
-                // Break point: Check for error
-                if(self::handleError(sprintf(Plugin_admin_bar::_('Error downloading up %s:%s - Cancelling this update'), $type, $name))) continue;
-                
-                // Update version.json file
-                self::updateVersion($check[$type][$name]);
-                
+                    // Run backup for this update
+                    self::backup($type, $name, $check[$type][$name]);
+
+                    sleep(1);
+
+                    // Break point: Check for error
+                    if(self::handleError(sprintf(Plugin_admin_bar::_('Error backing up %s:%s - Cancelling this update'), $type, $name))) continue;
+
+                    // Download this update
+                    self::download($type, $name, $check[$type][$name], $extract, $extractTo);
+
+                    sleep(1);
+
+                    // Break point: Check for error
+                    if(self::handleError(sprintf(Plugin_admin_bar::_('Error downloading up %s:%s - Cancelling this update'), $type, $name))) continue;
+
+                    // Update version.json file
+                    self::updateVersion($check[$type][$name]);
+
+                }
             }
         }
         
         // End updates
-        self::log('Finishing updates');
-        
-        var_dump(self::status());
-        
-        self::_unset('updating_in_progress');
-        self::_unset('update_status');
+        self::log(self::_('Finishing updates'));
     }
  
     /**
@@ -359,11 +359,10 @@ class Plugin_admin_bar_updater {
     private static function extractDirectoryTo($zip, $dir, $to) {
         for($i = 0; $i < $zip->numFiles; $i++) {
             $entry = $zip->getNameIndex($i);
-            //Use strpos() to check if the entry name contains the directory we want to extract
-            if (strpos($entry, $dir) !== false) {
+            // Use strpos() to check if the entry name contains the directory we want to extract
+            if (strpos($entry, $dir) !== false && !empty(pathinfo($entry, PATHINFO_EXTENSION))) {
                 // Extract the file to folder
-                var_dump($to . substr($entry, strlen($dir) + 1));
-                //file_put_contents($to.$entry, $zip->getFromIndex($i));
+                file_put_contents($to . substr($entry, strlen($dir) + 1), $zip->getFromIndex($i));
             }
         }
     }
@@ -384,12 +383,37 @@ class Plugin_admin_bar_updater {
     }
     
     /**
-     * Return the update status log
+     * Return the update status log and moves log to history if update is completed
      * 
      * @returns String The update status logs
      */
-    private static function status() {
-        return self::get('update_status');
+    public static function status() {
+        if(file_exists(Plugin_admin_bar::getPluginPath().DS.'current-status.json')) {
+            $log = json_decode(file_get_contents(Plugin_admin_bar::getPluginPath().DS.'current-status.json'), true);
+        } else {
+            $log = array();
+        }
+        if(end($log) === self::_('Finishing updates')) {
+            self::storeLog($log);
+        }
+        return $log;
+    }
+    
+    private static function storeLog($log) {
+        if(file_exists(Plugin_admin_bar::getPluginPath().DS.'update-history.json')) {
+            $history = json_decode(file_get_contents(Plugin_admin_bar::getPluginPath().DS.'update-history.json'), true);
+        } else {
+            $history = array();
+        }
+        array_unshift($history, array(
+            'stamp' => time(),
+            'datetime' => date('r'),
+            'log' => $log
+        ));
+        // Delete current log
+        unlink(Plugin_admin_bar::getPluginPath().DS.'current-status.json');
+        // Save history
+        file_put_contents(Plugin_admin_bar::getPluginPath().DS.'update-history.json', json_encode($history));
     }
     
     /**
@@ -398,7 +422,13 @@ class Plugin_admin_bar_updater {
      * @param String The message to log
      */
     private static function log($message) {
-        self::set('update_status', array_merge(self::get('update_status'), array($message)));
+        if(file_exists(Plugin_admin_bar::getPluginPath().DS.'current-status.json')) {
+            $log = json_decode(file_get_contents(Plugin_admin_bar::getPluginPath().DS.'current-status.json'), true);
+        } else {
+            $log = array();
+        }
+        $log[] = $message;
+        file_put_contents(Plugin_admin_bar::getPluginPath().DS.'current-status.json', json_encode($log));
     }
     
     /**
