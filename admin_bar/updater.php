@@ -382,7 +382,7 @@ class Plugin_admin_bar_updater {
     private static function deleteFromDirectory($dir, $protected) {
         foreach ($iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $item) {
             // Skip protected files
-            if(in_array($dir.$iterator->getSubPathName(), $protected)) continue;
+            if(in_array($iterator->getSubPathName(), $protected)) continue;
             if($item->isDir()) {
                 rmdir($dir.$iterator->getSubPathName());
             } else {
