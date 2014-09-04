@@ -1,8 +1,1 @@
-{
-    "version":"0.0.17",
-    "check":"https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/admin_bar\/version.json",
-    "download":"https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/admin_bar\/admin_bar.zip?raw=true",
-    "updated":"04\/09\/2014",
-    "stamp":1409851586,
-    "protect": ["update-history.json", "current-status.json"]
-}
+{"version":"0.0.18","check":"https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/admin_bar\/version.json","download":"https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/admin_bar\/admin_bar.zip?raw=true","updated":"04\/09\/2014","stamp":1409857823,"protect":["update-history.json","current-status.json"]}
