@@ -319,14 +319,7 @@ class Plugin_admin_bar extends Plugins {
 		
 	}
     
-    protected static function onModelLoad() {
-        var_dump(func_get_args());
-        //var_dump('Run query on 
-    }
-    
     protected static function onBeforeViewDisplay() {
-        
-        var_dump('TEST', self::getPluginVersion());
         
         // Create stats content
         $out = '';
