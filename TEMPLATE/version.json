@@ -1,0 +1,8 @@
+{
+    "version": "0.0.1",
+    "check": "https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/TEMPLATE\/version.json",
+    "download": "https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/TEMPLATE\/TEMPLATE.zip?raw=true",
+    "updated": "04\/09\/2014",
+    "stamp": 1409858656,
+    "protect": []
+}

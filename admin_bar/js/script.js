@@ -31,12 +31,20 @@
                     async: true,
                     dataType: 'json'
                 }).done(function(data) {
-                    if(status == 100 || data.completed === true) return;
+                    if(status == 100 || data.completed === true) return reloadPage();
                     $('#admin-bar-tab-updates').empty().append(data.status.join("<br />"));
                     status++;
                     checkUpdateStatus();
                 });
             }, 500);
+        }
+        
+        function reloadPage() {
+            $('#admin-bar-tab-updates').append('<br />Reloading in 5 seconds...');
+            setTimeout(function() {
+                window.location.reload();
+            }, 6000);
+            return;
         }
         
         // Begin update ajax script

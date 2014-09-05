@@ -165,9 +165,6 @@ class Plugin_admin_bar_updater {
                     // Break point: Check for error
                     if(self::handleError(sprintf(Plugin_admin_bar::_('Error downloading up %s:%s - Cancelling this update'), $type, $name))) continue;
 
-                    // Update version.json file
-                    self::updateVersion($check[$type][$name]);
-
                 }
             }
         }
@@ -335,6 +332,10 @@ class Plugin_admin_bar_updater {
     
     private static function updateVersion($update) {
         
+        $dirFrom = 'library';
+        $extract = 'Nymbly-PHP-master/library';
+        $extractTo = DIR_ROOT.DS.'library'.DS;
+
     }
        
     /**

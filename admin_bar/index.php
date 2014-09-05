@@ -186,7 +186,7 @@ class Plugin_admin_bar extends Plugins {
 
             // Loop types of updates
             foreach($updates as $type => $update) {
-                if($type == 'total') continue;
+                if($type == 'total' || !is_array($update)) continue;
                 // Output update type section
                 $output .= '    <tr>
                                     <td>' . ucfirst($type) . '</td>
@@ -316,6 +316,11 @@ class Plugin_admin_bar extends Plugins {
 		}
 		
 	}
+    
+    protected static function onModelLoad() {
+        var_dump(func_get_args());
+        //var_dump('Run query on 
+    }
     
     protected static function onBeforeViewDisplay() {
         

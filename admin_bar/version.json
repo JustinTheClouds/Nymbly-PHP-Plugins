@@ -1,5 +1,5 @@
 {
-    "version": "0.0.20",
+    "version": "0.0.19",
     "check": "https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/admin_bar\/version.json",
     "download": "https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/admin_bar\/admin_bar.zip?raw=true",
     "updated": "04\/09\/2014",
