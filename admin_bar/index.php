@@ -479,7 +479,8 @@ class Plugin_admin_bar extends Plugins {
 	protected static function onEventFired($action, $event) {
 		
 		$args = func_get_args();
-		array_shift($args);
+		//array_shift($args);
+        //var_dump($args);
 
 		// Should we only debug a specific event
 		if($single = App::get('get.debug_trace_event', 'request')) {
