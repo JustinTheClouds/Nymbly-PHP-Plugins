@@ -213,6 +213,8 @@ class Plugin_admin_bar extends Plugins {
 
             // Add update button
             $output .= '<input type="submit" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '" value="' . self::_('Run Updates') . '" />';
+            // Add Check for updates button
+            $output .= '<a href="?' . self::inputName('action') . '=checkUpdates" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '">' . self::_('Check For Updates') . '</a>';
             
             $output .= '</form>';
             
@@ -239,6 +241,10 @@ class Plugin_admin_bar extends Plugins {
         if(empty($status)) {
             View::assign('completed', true);
         }
+    }
+    
+    private static function checkUpdatesAction() {
+        self::_unset('updates_last_check');
     }
     
     /**
