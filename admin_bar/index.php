@@ -43,6 +43,8 @@ defined('IN_APP') ? NULL : exit();
  *
  * @author Justin Carlson
  * @date 8/19/2014
+ * 
+ * @TODO Use ajax for tab content instead of loading each tab on page load.
  *
  */
 class Plugin_admin_bar extends Plugins {
@@ -324,8 +326,22 @@ class Plugin_admin_bar extends Plugins {
     
     protected static function onBeforeViewDisplay() {
         
+        var_dump('TEST', self::getPluginVersion());
+        
         // Create stats content
         $out = '';
+        
+        // Get current framework version
+        $info = json_decode(file_get_contents(DIR_ROOT.DS.'version.json'), true);
+        $out .= '<strong>Current Nymbly Version: ' . $info['version'] . '</strong><br />';
+        
+        // Get all pluging
+        $out .= "<strong>Plugins</strong><br />";
+        $plugins = Plugins::getInstalledPlugins();
+        array_walk($plugins, function(&$item, $key) { $item = $key . ': ' . ($item ? 'Enabled' : 'Disabled') . ' : ' . Plugins::getPluginVersion($key); } );
+        $out .= implode('<br />', $plugins);
+        
+        // Get all defined constants
         $constants = get_defined_constants(true);
         $constants = $constants['user'];
         $out .= "<strong>Constants</strong>";
