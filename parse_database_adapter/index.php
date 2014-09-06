@@ -5,7 +5,7 @@
  * This has every hook defined for you. It's recommended that you
  * comment out the hooks that are not being used.
  */
-class Plugin_TEMPLATE extends Plugins {
+class Plugin_parse_database_adapter extends Plugins {
     
     public function __construct() {
         
@@ -32,12 +32,12 @@ class Plugin_TEMPLATE extends Plugins {
     protected static function onPluginsInit($enabledPlugins) {}
     
     /**
-     * Called when the specified plugin is initialized. In this case, Plugin_TEMPLATE.
+     * Called when the specified plugin is initialized. In this case, Plugin_parse_database_adapter.
      * 
      * @hook Action
      * @param Array $configs The plugins configs
      */
-    protected static function onPluginInit_TEMPLATE($configs) {}
+    protected static function onPluginInit_parse_database_adapter($configs) {}
     
     /**
      * Called whenever the apps theme name is requested
@@ -79,8 +79,8 @@ class Plugin_TEMPLATE extends Plugins {
      * Note: This hook is already defined in the Plugin class. It will automatically
      * try to load any styles that are defined in the plugins config settings under
      * the styles property. The path to the style should be relative to the plugins directory.
-     * For ex. if your plugin is Nymbly/application/plugins/TEMPLATE/ and your styles are in
-     * Nymbly/application/plugins/TEMPLATE/css/ then you would add styles 
+     * For ex. if your plugin is Nymbly/application/plugins/parse_database_adapter/ and your styles are in
+     * Nymbly/application/plugins/parse_database_adapter/css/ then you would add styles 
      * to be automatically loaded by calling
      * 
      * self::setPluginSettings('styles', array(
@@ -107,8 +107,8 @@ class Plugin_TEMPLATE extends Plugins {
      * Note: This hook is already defined in the Plugin class. It will automatically
      * try to load any scripts that are defined in the plugins config settings under
      * the scripts property. The path to the script should be relative to the plugins directory.
-     * For ex. if your plugin is Nymbly/application/plugins/TEMPLATE/ and your scripts are in
-     * Nymbly/application/plugins/TEMPLATE/js/ then you would add scripts
+     * For ex. if your plugin is Nymbly/application/plugins/parse_database_adapter/ and your scripts are in
+     * Nymbly/application/plugins/parse_database_adapter/js/ then you would add scripts
      * to be automatically loaded by calling
      * 
      * self::setPluginSettings('scripts', array(
@@ -132,8 +132,8 @@ class Plugin_TEMPLATE extends Plugins {
      * Note: This hook is already defined in the Plugin class. It will automatically
      * try to load any styles that are defined in the plugins config settings under
      * the style property. The path to the style should be relative to the plugins directory.
-     * For ex. if your plugin is Nymbly/application/plugins/TEMPLATE/ and your styles are in
-     * Nymbly/application/plugins/TEMPLATE/css/ then you would add styles 
+     * For ex. if your plugin is Nymbly/application/plugins/parse_database_adapter/ and your styles are in
+     * Nymbly/application/plugins/parse_database_adapter/css/ then you would add styles 
      * to be automatically loaded by calling
      * 
      * self::setPluginSettings('styles', array(

@@ -45,7 +45,7 @@ defined('IN_APP') ? NULL : exit();
  * @date 8/19/2014
  * 
  * @TODO Use ajax for tab content instead of loading each tab on page load.
- *
+ * @TODO Fx this button for specific errors. EX. No template file error, clicking will create the template file.
  */
 class Plugin_admin_bar extends Plugins {
 
@@ -247,6 +247,17 @@ class Plugin_admin_bar extends Plugins {
         self::_unset('updates_last_check');
     }
     
+    private static function generatePluginAction() {
+        $name = self::get('new_plugin_name', 'request.post');
+        if(!$name) return;
+        $formatted = str_replace(array(' ', '-'), '_', strtolower($name));
+        // Create dir
+        mkdir(DIR_PLUGINS.DS.$formatted);
+        // Copy files
+        file_put_contents(DIR_PLUGINS.DS.$formatted.DS.'index.php', str_replace('TEMPLATE', $formatted, file_get_contents(DIR_PLUGINS.DS.'TEMPLATE'.DS.'index.php')));
+        file_put_contents(DIR_PLUGINS.DS.$formatted.DS.'version.json', str_replace('TEMPLATE', $formatted, file_get_contents(DIR_PLUGINS.DS.'TEMPLATE'.DS.'version.json')));
+    }
+    
     /**
      * Checks periodically for updates.
      * 
@@ -353,7 +364,9 @@ class Plugin_admin_bar extends Plugins {
         
         // Create Tools content
         $out = self::$tools;
-        $out .= '<a href="?' . self::inputName('action') . '=clearCache">Clear Cache</a>';
+        $out .= '<a href="?' . self::inputName('action') . '=clearCache">' . self::_('Clear Cache') . '</a><br />';
+        $out .= '<strong>' . self::_('Generate new plugin') . '</strong><br />';
+        $out .= '<form method="post" action="?' . self::inputName('action') . '=generatePlugin"><input name="' . self::inputName('new_plugin_name') . '" type="text" /><input type="submit" value="' . self::_('Generate') . '" /></form>';
         self::assign('admin_bar_tools', $out);
     }
 	
