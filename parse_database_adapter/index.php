@@ -1,21 +1,70 @@
 <?php
 
+use Parse\ParseClient;
+use Parse\ParseObject;
+use Parse\ParseQuery;
+use Parse\ParseACL;
+use Parse\ParsePush;
+use Parse\ParseUser;
+use Parse\ParseInstallation;
+use Parse\ParseException;
+use Parse\ParseAnalytics;
+use Parse\ParseFile;
+use Parse\ParseCloud;
+
 /**
- * Just template for starting your own plugins.
- * This has every hook defined for you. It's recommended that you
- * comment out the hooks that are not being used.
+ * A database adapter to store your data in your parse.com apps
  */
 class Plugin_parse_database_adapter extends Plugins {
     
+    /**
+     * Initializes the parse client
+     */
     public function __construct() {
         
-        /**
-         * Disabling this plugin since it's only a template.
-         * You'll want to remove this line once you copy and rename this plugin
-         */
-        self::unregisterPlugin();
+        // Setup parse autoloader
+        require_once(self::getPluginPath() . DS . 'parse-php-sdk' . DS . 'autoload.php');
+        
+        // Initialize parse
+        ParseClient::initialize(self::getPluginSettings('application_id'), self::getPluginSettings('rest_api_key'), self::getPluginSettings('master_api_key'));
         
     }
+    
+    protected static function onModelLoad($model) {
+        $query = new ParseQuery($model->getTable());
+        try {
+            $object = $query->get("UprHxvxhFC");
+            // Set properties on model
+            foreach($model->getProperties() as $prop) {
+                $model->$prop = $object->get($prop);
+            }
+        } catch (ParseException $ex) {
+            var_dump($ex);
+            // The object was not retrieved successfully.
+            // error is a ParseException with an error code and message.
+        }
+    }
+    
+    protected static function onModelSave($model) {
+        // If we have a primary key and it is set, initial object with objectId
+        if(($key = $model->getKey()) && $model->$key) {
+            $object = new ParseObject($model->getTable(), $model->$key);
+        } else {
+            $object = new ParseObject($model->getTable());
+        }
+        // Set properties on parse object
+        foreach($model->getProperties() as $prop) {
+            $object->set($prop, $model->$prop);
+        }
+        // Try to save the object
+        try {
+            $object->save();
+            if($key = $model->getKey()) $model->$key = $object->getObjectId();
+        } catch (ParseException $ex) {  
+            // TODO handle errors
+        }    
+    }
+    
     
     /**
      * Runtime Hooks

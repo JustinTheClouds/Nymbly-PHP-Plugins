@@ -69,8 +69,13 @@ class Plugin_admin_bar_updater {
         $updates['plugins'] = array();
         foreach($plugins as $plugin => $configs) {
             
+            if(!file_exists(DIR_PLUGINS.DS.$plugin.DS.'version.json')) continue;
             $currentInfo = json_decode(file_get_contents(DIR_PLUGINS.DS.$plugin.DS.'version.json'), true);
-            $serverInfo = json_decode(file_get_contents($currentInfo['check'] . '?' . time()), true);
+            
+            $serverFile = $currentInfo['check'] . '?' . time();
+            
+            if(!file_exists($serverFile)) continue;
+            $serverInfo = json_decode(file_get_contents($serverFile), true);
 
             // Is the server version newer
             if(version_compare($serverInfo['version'], $currentInfo['version']) === 1) {
