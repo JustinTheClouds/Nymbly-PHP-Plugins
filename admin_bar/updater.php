@@ -74,9 +74,9 @@ class Plugin_admin_bar_updater {
             
             $serverFile = $currentInfo['check'] . '?' . time();
             
-            if(!file_exists($serverFile)) continue;
             $serverInfo = json_decode(file_get_contents($serverFile), true);
-
+            if(!$serverInfo) continue;
+            
             // Is the server version newer
             if(version_compare($serverInfo['version'], $currentInfo['version']) === 1) {
                 $serverInfo['current'] = $currentInfo;
