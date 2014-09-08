@@ -378,7 +378,6 @@ class Plugin_admin_bar extends Plugins {
      * @return <type>
      */
 	protected static function onViewLoadTemplate($content) {
-        
 		$errors = '';
 		foreach(self::$errors as $error) {
 			$errors .= print_r($error, 1);
@@ -388,7 +387,7 @@ class Plugin_admin_bar extends Plugins {
 		self::assign('admin_bar_events', implode('<hr />', self::$events));
 		self::assign('admin_bar_stats', implode('<hr />', self::$stats));
 	
-		return str_replace('{$output_content}', '{$output_content}' . self::$adminBar, $content);
+		return str_replace('</body>', '</body>' . self::$adminBar, $content);
 	}
 	
     /**

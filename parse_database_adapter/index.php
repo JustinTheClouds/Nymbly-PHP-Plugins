@@ -22,8 +22,14 @@ class Plugin_parse_database_adapter extends Plugins {
      */
     public function __construct() {
         
+        // Sessions must be started after autoloader
+        session_write_close();
+        
         // Setup parse autoloader
         require_once(self::getPluginPath() . DS . 'parse-php-sdk' . DS . 'autoload.php');
+        
+        // Restart session
+        session_start();
         
         // Initialize parse
         ParseClient::initialize(self::getPluginSettings('application_id'), self::getPluginSettings('rest_api_key'), self::getPluginSettings('master_api_key'));
