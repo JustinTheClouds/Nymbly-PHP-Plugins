@@ -1,3 +1,0 @@
-[submodule "parse_database_adapter/parse-php-sdk"]
-	path = parse_database_adapter/parse-php-sdk
-	url = https://github.com/ParsePlatform/parse-php-sdk.git
