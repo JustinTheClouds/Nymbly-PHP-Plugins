@@ -4,11 +4,13 @@
     $('.admin-bar-tabs a').click(function() {
         $('.admin-bar-tab-content').hide();
         $($(this).attr('href')).show();
+        $('#admin-bar-close-panel').css('display', 'inline-block');
     });
     
     // Close Tab panels
     $('#admin-bar-close-panel').click(function() {
         $('.admin-bar-tab-content').hide();
+        $('#admin-bar-close-panel').hide();
     });
     
     // Run updates
@@ -31,8 +33,8 @@
                     async: true,
                     dataType: 'json'
                 }).done(function(data) {
-                    if(status == 100 || data.completed === true) return reloadPage();
-                    $('#admin-bar-tab-updates').empty().append(data.status.join("<br />"));
+                    if(status == 100 || data['plugins/admin_bar'].completed === true) return reloadPage();
+                    $('#admin-bar-tab-updates').empty().append(data['plugins/admin_bar'].status.join("<br />"));
                     status++;
                     checkUpdateStatus();
                 });

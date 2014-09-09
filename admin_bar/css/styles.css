@@ -42,6 +42,32 @@ html {margin-top: 33px;}
                 color: rgba(0,0,0,.8);
                 background: rgba(255,255,255,.8);
             }
+            .admin-bar-tabs-count {
+                background: #848383;
+                display: inline-block;
+                border-radius: 4px;
+                width: 15px;
+                height: 15px;
+                text-align: center;
+                margin: 0 5px 0 0;
+                color: white;
+                font-size: 10px;
+                line-height: 16px;
+                position: relative;
+                top: -2px;
+            }
+            #admin-bar-tabs-updates-count {
+                background: green;
+            }
+            #admin-bar-tabs-debugs-count {
+                background: #909000;
+            }
+            #admin-bar-tabs-errors-count {
+                background: #900000;
+            }
+            .admin-bar-tabs #admin-bar-close-panel {
+                display: none;
+            }
     .admin-bar-tab-content {
         margin-top: 40px;
         display: none;

@@ -114,7 +114,7 @@ class Plugin_admin_bar_updater {
         
         // This creates a new update log
         if(self::get('dry_run', 'request.get')) self::log('**** DRYRUN ****');
-        self::log('Beginning updates');
+        self::log(self::_('Beginning updates'));
         
         // Loop selected updates
         $selected = self::get('updates', 'request.post');
@@ -420,11 +420,7 @@ class Plugin_admin_bar_updater {
      * @param Array $log The current update log to add to the history log
      */
     private static function storeLog($log) {
-        if(file_exists(Plugin_admin_bar::getPluginPath().DS.'update-history.json')) {
-            $history = json_decode(file_get_contents(Plugin_admin_bar::getPluginPath().DS.'update-history.json'), true);
-        } else {
-            $history = array();
-        }
+        $history = Plugin_admin_bar::getData('updateHistory', array());
         array_unshift($history, array(
             'stamp' => time(),
             'datetime' => date('r'),
@@ -433,7 +429,7 @@ class Plugin_admin_bar_updater {
         // Delete current log
         unlink(Plugin_admin_bar::getPluginPath().DS.'current-status.json');
         // Save history
-        file_put_contents(Plugin_admin_bar::getPluginPath().DS.'update-history.json', json_encode($history));
+        Plugin_admin_bar::storeData('updateHistory', $history);
     }
     
     /**

@@ -53,6 +53,11 @@ class Plugin_admin_bar extends Plugins {
      * HTML content of the admin bar to be appended
      */
 	private static $adminBar = '<div class="admin-bar-wrapper">';
+    
+    /**
+     * Application start time in microtime once plugins are initialized
+     */
+    private static $startTime;
 
     /**
      * Store errors caught
@@ -73,6 +78,11 @@ class Plugin_admin_bar extends Plugins {
      * Store stats sent
      */
 	private static $stats = array();
+    
+    /**
+     * Store updates found
+     */
+	private static $updates = null;
 	
     /**
      * Store tools tab content
@@ -132,12 +142,8 @@ class Plugin_admin_bar extends Plugins {
         }
 		
         // Check for updates
-        self::getUpdates();
+        self::$updates = self::checkForUpdates();
         
-		// Setup tabs
-		self::setUpTabs();
-		
-		self::$adminBar .= '</div>';
     }
     
     public static function assign() {
@@ -154,81 +160,6 @@ class Plugin_admin_bar extends Plugins {
         self::$tools .= print_r(App::get(null), 1);
     }
     
-    /**
-     * Checks for updates and build the update panel if updates available
-     * 
-     * @author Justin Carlson
-     * @date 8/19/2014
-     */
-    private static function getUpdates() {
-            
-        // Check for updates
-        $updates = self::checkForUpdates();
-
-        // If we have any updates available
-        if($updates['total']) {
-
-            $output = '<form action="?'. self::inputName('action') . '=beginUpdating' . ( App::get('appName', 'configs') == 'Nymbly PHP' ? '&'. self::inputName('dry_run') . '=1' : '' ) . '" method="post">';
-
-            // Output the title message
-            $output .= '<div class="' . self::prefix('tab-title') . '">' . sprintf(self::_('%s update is available', '%s updates are available', $updates['total']), $updates['total']) . '</div>';
-
-            // Build the update list
-            $output .= '<table class="' . self::prefix('table') . '">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" /></th>
-                                    <th>Name</th>
-                                    <th>New Version</th>
-                                    <th>Current Version</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>';
-
-            // Loop types of updates
-            foreach($updates as $type => $update) {
-                if($type == 'total' || !is_array($update)) continue;
-                // Output update type section
-                $output .= '    <tr>
-                                    <td>' . ucfirst($type) . '</td>
-                                </tr>';
-                
-                foreach($update as $name => $plugin) {
-                        
-                    $output .= '<tr>
-                                    <td><input type="checkbox" name="' . self::inputName('updates.' . $type . '.' . $name) . '" /></td>
-                                    <td>' . $name . '</td>
-                                    <td>' . $plugin['version'] . '</td>
-                                    <td>' . $plugin['current']['version'] . '</td>
-                                </tr>';
-                }
-
-            }
-
-            // Close table
-            $output .= '
-                            </tbody>
-                        </table>';
-
-            // Add update button
-            $output .= '<input type="submit" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '" value="' . self::_('Run Updates') . '" />';
-            // Add Check for updates button
-            $output .= '<a href="?' . self::inputName('action') . '=checkUpdates" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '">' . self::_('Check For Updates') . '</a>';
-            
-            $output .= '</form>';
-            
-            self::assign('admin_bar_updates', $output);
-
-        // EVerything is up to date
-        } else {
-
-            unset(self::$defaultTabs['Updates']);
-
-        }
-        
-    }
-    
     private static function beginUpdatingAction() {
         require_once(self::getPluginPath() . DS . 'updater.php');
         Plugin_admin_bar_updater::begin();
@@ -237,9 +168,9 @@ class Plugin_admin_bar extends Plugins {
     private static function checkUpdatingStatusAction() {
         require_once(self::getPluginPath() . DS . 'updater.php');
         $status = Plugin_admin_bar_updater::status();
-        View::assign('status', $status);
+        self::assign('status', $status, null, array('json'));
         if(empty($status)) {
-            View::assign('completed', true);
+            self::assign('completed', true, null, array('json'));
         }
     }
     
@@ -314,12 +245,13 @@ class Plugin_admin_bar extends Plugins {
 			$buttons = "";
 			$contents = "";
 			foreach($tabs as $label => $content) {
-				$buttons .= '<li><a href="#admin-bar-tab-' . strtolower($label) . '">' . self::_($label) . '</a></li>';
-				$contents .= '<div id="admin-bar-tab-' . strtolower($label) . '" class="admin-bar-tab-content">' . $label . '<div>' . $content . '</div></div>';
+                if(!($labelText = call_user_func(array('self', 'get' . $label . 'Label')))) continue;
+				$buttons .= '<li><a href="#admin-bar-tab-' . strtolower($label) . '">' . $labelText . '</a></li>';
+				$contents .= '<div id="admin-bar-tab-' . strtolower($label) . '" class="admin-bar-tab-content">' . $label . '<div>' . call_user_func(array('self', 'get' . $label . 'Content')) . '</div></div>';
 			}
             
             // Add close button
-            $buttons .= '<li><a href="#admin-bar-close-panel">X Close</a></li>';
+            $buttons .= '<li id="admin-bar-close-panel"><a href="#" onclick="return false;">X Close</a></li>';
 
 			// Add tab buttons
 			self::$adminBar .= $buttons;
@@ -336,7 +268,176 @@ class Plugin_admin_bar extends Plugins {
 		
 	}
     
+    protected static function getUpdatesLabel() {
+        $count = self::$updates['total'];
+        if($count === 0) return false;
+        return '<span id="' . self::prefix('tabs-updates-count') . '" class="' . self::prefix('tabs-count') . '">' . $count . '</span>' . self::_('Update', 'Updates', $count);
+    }
+    
+    /**
+     * Gets debug tab with number of debugs, tab is hidden if no debugs
+     */
+    protected static function getDebugsLabel() {
+        $count = count(self::$debugs);
+        if($count === 0) return false;
+        return '<span id="' . self::prefix('tabs-debugs-count') . '" class="' . self::prefix('tabs-count') . '">' . $count . '</span>' . self::_('Debug', 'Debugs', $count);
+    }
+    
+    /**
+     * Gets errors tab with number of errors, tab is hidden if no errors
+     */
+    protected static function getErrorsLabel() {
+        $count = count(self::$errors);
+        if($count === 0) return false;
+        return '<span id="' . self::prefix('tabs-errors-count') . '" class="' . self::prefix('tabs-count') . '">' . $count . '</span>' . self::_('Error', 'Errors', $count);
+    }
+    
+    /**
+     * Gets events tab with number of events, tab is hidden if no events
+     */
+    protected static function getEventsLabel() {
+        $count = count(self::$events);
+        if($count === 0) return false;
+        return '<span id="' . self::prefix('tabs-events-count') . '" class="' . self::prefix('tabs-count') . '">' . $count . '</span>' . self::_('Event', 'Events', $count);
+    }
+    
+    protected static function getStatsLabel() {
+        return self::_('Stats');
+    }
+    
+    protected static function getJSONLabel() {
+        return self::_('JSON');
+    }
+    
+    protected static function getToolsLabel() {
+        return self::_('Tools');
+    }
+    
+    protected static function getDocsLabel() {
+        return self::_('Docs');
+    }
+    
+    protected static function getUpdatesContent() {
+        
+        // Check for updates
+        $updates = self::$updates;
+
+        // If we have any updates available
+        if($updates['total']) {
+
+            $output = '<form action="?'. self::inputName('action') . '=beginUpdating' . ( App::get('appName', 'configs') == 'Nymbly PHP' ? '&'. self::inputName('dry_run') . '=1' : '' ) . '" method="post">';
+
+            // Output the title message
+            $output .= '<div class="' . self::prefix('tab-title') . '">' . sprintf(self::_('%s update is available', '%s updates are available', $updates['total']), $updates['total']) . '</div>';
+
+            // Build the update list
+            $output .= '<table class="' . self::prefix('table') . '">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" /></th>
+                                    <th>Name</th>
+                                    <th>New Version</th>
+                                    <th>Current Version</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+
+            // Loop types of updates
+            foreach($updates as $type => $update) {
+                if($type == 'total' || !is_array($update)) continue;
+                // Output update type section
+                $output .= '    <tr>
+                                    <td>' . ucfirst($type) . '</td>
+                                </tr>';
+                
+                foreach($update as $name => $plugin) {
+                        
+                    $output .= '<tr>
+                                    <td><input type="checkbox" name="' . self::inputName('updates.' . $type . '.' . $name) . '" /></td>
+                                    <td>' . $name . '</td>
+                                    <td>' . $plugin['version'] . '</td>
+                                    <td>' . $plugin['current']['version'] . '</td>
+                                </tr>';
+                }
+
+            }
+
+            // Close table
+            $output .= '
+                            </tbody>
+                        </table>';
+
+            // Add update button
+            $output .= '<input type="submit" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '" value="' . self::_('Run Updates') . '" />';
+            // Add Check for updates button
+            $output .= '<a href="?' . self::inputName('action') . '=checkUpdates" id="' . self::prefix('run-updates-button') . '" class="' . self::prefix('button') . '">' . self::_('Check For Updates') . '</a>';
+            
+            $output .= '</form>';
+            
+            return $output;
+
+        // EVerything is up to date
+        } else {
+
+            //unset(self::$defaultTabs['Updates']);
+
+        }
+    }
+    
+    protected static function getDebugsContent() {
+        return implode('<hr />', self::$debugs);
+    }
+    
+    protected static function getErrorsContent() {
+        $errors = '';
+		foreach(self::$errors as $error) {
+			$errors .= print_r($error['erroutput'], 1);
+		}
+		return $errors;
+    }
+    
+    protected static function getEventsContent() {
+        return implode('<hr />', self::$events);
+    }
+    
+    protected static function getStatsContent() {
+        return implode('<hr />', self::$stats);
+    }
+    
+    protected static function getToolsContent() {
+        // Create Tools content
+        $out = self::$tools;
+        $out .= '<a href="?' . self::inputName('action') . '=clearCache">' . self::_('Clear Cache') . '</a><br />';
+        $out .= '<strong>' . self::_('Generate new plugin') . '</strong><br />';
+        $out .= '<form method="post" action="?' . self::inputName('action') . '=generatePlugin"><input name="' . self::inputName('new_plugin_name') . '" type="text" /><input type="submit" value="' . self::_('Generate') . '" /></form>';
+        return $out;
+    }
+    
+    /**
+     * Catch errors
+     */
+    protected static function onErrorHandleError($error) {
+        self::$errors[] = $error;
+        return $error;
+    }
+    
+    /**
+     * Cancel default app error output
+     */
+    protected static function onErrorDisplayErrors($errors) {
+        return;
+    }
+    
+    protected static function onPluginsInit() {
+        
+        // Catch app start time
+        self::$startTime = microtime(true);
+    }
+    
     protected static function onBeforeViewDisplay() {
+        
+        if(App::get('method', 'request') != 'get' && App::get('method', 'request') != 'post') return;
         
         // Create stats content
         $out = '';
@@ -351,6 +452,10 @@ class Plugin_admin_bar extends Plugins {
         array_walk($plugins, function(&$item, $key) { $item = $key . ': ' . ($item ? 'Enabled' : 'Disabled') . ' : ' . Plugins::getPluginVersion($key); } );
         $out .= implode('<br />', $plugins);
         
+        // Average load time
+        $out .= "<br /><strong>Average Page Runtime</strong><br />";
+        $out .= round(self::getData('runTimesAverage'), 5) . "ms<br />";
+        
         // Get all defined constants
         $constants = get_defined_constants(true);
         $constants = $constants['user'];
@@ -362,12 +467,10 @@ class Plugin_admin_bar extends Plugins {
         $out .= '</ul>';
         self::$stats[] = $out;
         
-        // Create Tools content
-        $out = self::$tools;
-        $out .= '<a href="?' . self::inputName('action') . '=clearCache">' . self::_('Clear Cache') . '</a><br />';
-        $out .= '<strong>' . self::_('Generate new plugin') . '</strong><br />';
-        $out .= '<form method="post" action="?' . self::inputName('action') . '=generatePlugin"><input name="' . self::inputName('new_plugin_name') . '" type="text" /><input type="submit" value="' . self::_('Generate') . '" /></form>';
-        self::assign('admin_bar_tools', $out);
+        // Setup tabs
+		self::setUpTabs();
+		
+		self::$adminBar .= '</div>';
     }
 	
     /**
@@ -377,18 +480,28 @@ class Plugin_admin_bar extends Plugins {
      * 
      * @return <type>
      */
-	protected static function onViewLoadTemplate($content) {
-		$errors = '';
-		foreach(self::$errors as $error) {
-			$errors .= print_r($error, 1);
-		}
-		self::assign('admin_bar_errors', $errors);
-		self::assign('admin_bar_debugs', implode('<hr />', self::$debugs));
-		self::assign('admin_bar_events', implode('<hr />', self::$events));
-		self::assign('admin_bar_stats', implode('<hr />', self::$stats));
-	
-		return str_replace('</body>', '</body>' . self::$adminBar, $content);
+	protected static function onViewGetFooter($content) {
+		return $content . self::$adminBar;
 	}
+    
+    /**
+     * After view has been completely displayed, calculate and store app execution time
+     * 
+     * The time will be logged and displayed in the stats tab for next page load.
+     */
+    protected static function onAfterViewDisplay() {
+        
+        if(App::get('method', 'request') != 'get' || App::get('method', 'request') != 'post') return;
+        
+        $runTimes = self::getData('runTimes', array());
+        $average = array_sum($runTimes) / count($runTimes);
+        $runTimes[] = microtime(true) - self::$startTime;
+        
+        // Limit run times to last 100 entries
+        $runTimes = array_slice($runTimes, count($runTimes) - 100);
+        self::storeData('runTimes', $runTimes);
+        self::storeData('runTimesAverage', $average);
+    }
 	
     /**
      * Handle errors
@@ -491,8 +604,6 @@ class Plugin_admin_bar extends Plugins {
 	protected static function onEventFired($action, $event) {
 		
 		$args = func_get_args();
-		//array_shift($args);
-        //var_dump($args);
 
 		// Should we only debug a specific event
 		if($single = App::get('get.debug_trace_event', 'request')) {
@@ -541,19 +652,23 @@ class Plugin_admin_bar extends Plugins {
         return str_replace('_', '-', strtolower(self::getPluginName() . '-' . $text));
     }
     
-    /**
-     * Prefixes an input fields name
-     * 
-     * @param   String $name       The fields name
-     * @param   String $group=null If the filed should be sub grouped
-     * 
-     * @returns String   Returns the prefixed input name
-     */
-    private static function input($name, $group=null) {
-        if($group) {
-            return "admin_bar[$group][$name]";
+    public static function storeData($name, $data) {
+        if(file_exists(self::getPluginPath().DS.'data-logs.json')) {
+            $log = json_decode(file_get_contents(self::getPluginPath().DS.'data-logs.json'), true);
         } else {
-            return "admin_bar[$name]";
+            $log = array();
+        }
+        $log[$name] = $data;
+        // Save updated data log
+        file_put_contents(self::getPluginPath().DS.'data-logs.json', json_encode($log));
+    }
+    
+    public static function getData($name, $default=null) {
+        if(file_exists(self::getPluginPath().DS.'data-logs.json')) {
+            $logs = json_decode(file_get_contents(self::getPluginPath().DS.'data-logs.json'), true);
+            return isset($logs[$name]) ? $logs[$name] : $default;
+        } else {
+            return $default;
         }
     }
 	
