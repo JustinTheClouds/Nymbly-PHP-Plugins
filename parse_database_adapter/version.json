@@ -1,9 +1,9 @@
 {
-    "version": "0.0.6",
+    "version": "0.0.7",
     "check": "https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/parse_database_adapter\/version.json",
     "download": "https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/parse_database_adapter\/parse_database_adapter.zip?raw=true",
-    "updated": "09\/09\/2014",
-    "stamp": 1410235756,
+    "updated": "10\/09\/2014",
+    "stamp": 1410300394,
     "protect": [
 
     ]
