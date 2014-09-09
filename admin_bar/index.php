@@ -491,7 +491,7 @@ class Plugin_admin_bar extends Plugins {
      */
     protected static function onAfterViewDisplay() {
         
-        if(App::get('method', 'request') != 'get' || App::get('method', 'request') != 'post') return;
+        if(App::get('method', 'request') != 'get' && App::get('method', 'request') != 'post') return;
         
         $runTimes = self::getData('runTimes', array());
         $average = array_sum($runTimes) / count($runTimes);
