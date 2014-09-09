@@ -317,7 +317,9 @@ class Plugin_admin_bar_updater {
             self::log(sprintf(self::_('Delete files from %s'), $extractTo));
             
             // Delete old files
-            self::deleteFromDirectory($extractTo, $update['protect']);
+            if(isset($update['protect']))) {
+                self::deleteFromDirectory($extractTo, $update['protect']);
+            }
 
             self::log(sprintf(self::_('Extract folder: %s into %s'), $extract, $extractTo));
             
