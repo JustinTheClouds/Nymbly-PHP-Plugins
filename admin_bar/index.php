@@ -108,6 +108,7 @@ class Plugin_admin_bar extends Plugins {
      * 
      * Disabled the plugin unless is developer
      * 
+     * 
      * @return void
      */
     public function __construct() {
