@@ -23,13 +23,13 @@ class Plugin_parse_database_adapter extends Plugins {
     public function __construct() {
         
         // Sessions must be started after autoloader
-        session_write_close();
+        App::sessionClose();
         
         // Setup parse autoloader
         require_once(self::getPluginPath() . DS . 'parse-php-sdk' . DS . 'autoload.php');
         
         // Restart session
-        session_start();
+        App::sessionStart();
         
         // Initialize parse
         ParseClient::initialize(self::getPluginSettings('application_id'), self::getPluginSettings('rest_api_key'), self::getPluginSettings('master_api_key'));
@@ -51,6 +51,9 @@ class Plugin_parse_database_adapter extends Plugins {
         }
     }
     
+    /**
+     * Create or updates the object in the parse.com database
+     */
     protected static function onModelSave($model) {
         // If we have a primary key and it is set, initial object with objectId
         if(($key = $model->getKey()) && $model->$key) {
@@ -60,11 +63,17 @@ class Plugin_parse_database_adapter extends Plugins {
         }
         // Set properties on parse object
         foreach($model->getProperties() as $prop) {
+            // If a value is not set for this prop, then don't update it
+            if(!$model->$prop) continue;
+            // If this is a the id key, then don't set it since, objectId is used for parse.com
+            if($model->getKey() === $prop) continue;
+            // Set all other props
             $object->set($prop, $model->$prop);
         }
         // Try to save the object
         try {
             $object->save();
+            // If the model has a key, set the objectId to the key property
             if($key = $model->getKey()) $model->$key = $object->getObjectId();
         } catch (ParseException $ex) {  
             // TODO handle errors
