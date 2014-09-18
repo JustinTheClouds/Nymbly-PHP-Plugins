@@ -93,14 +93,14 @@ class Plugin_admin_bar extends Plugins {
      * Default tabs to initalize the admin bar with
      */
 	private static $defaultTabs = array(
-		'Updates'  => '{$admin_bar_updates}',
-		'Debugs'   => '{$admin_bar_debugs}',
-		'Errors'   => '{$admin_bar_errors}',
-		'Events'   => '{$admin_bar_events}',
-		'Stats'    => '{$admin_bar_stats}',
-		'JSON'     => '{$admin_bar_json}',
-		'Docs'     => '{$admin_bar_docs}',
-		'Tools'    => '{$admin_bar_tools}'
+		'Updates',
+		'Debugs',
+		'Errors',
+		'Events',
+		'Stats',
+		'JSON',
+		'Docs',
+		'Tools'
 	);
     
     /**
@@ -245,10 +245,17 @@ class Plugin_admin_bar extends Plugins {
 			
 			$buttons = "";
 			$contents = "";
-			foreach($tabs as $label => $content) {
-                if(!($labelText = call_user_func(array('self', 'get' . $label . 'Label')))) continue;
+			foreach($tabs as $label) {
+                
+                $class = is_array($label) ? $label['class'] : 'self';
+                $labelMethod = is_array($label) ? $label['labelMethod'] : 'get' . $label . 'Label';
+                $contentMethod = is_array($label) ? $label['contentMethod'] : 'get' . $label . 'Content';
+                $label = is_array($label) ? $label['label'] : $label;
+                
+                if(!($labelText = call_user_func(array($class, $labelMethod)))) continue;
+                    
 				$buttons .= '<li><a href="#admin-bar-tab-' . strtolower($label) . '">' . $labelText . '</a></li>';
-				$contents .= '<div id="admin-bar-tab-' . strtolower($label) . '" class="admin-bar-tab-content">' . $label . '<div>' . call_user_func(array('self', 'get' . $label . 'Content')) . '</div></div>';
+				$contents .= '<div id="admin-bar-tab-' . strtolower($label) . '" class="admin-bar-tab-content">' . $label . '<div>' . call_user_func(array($class, $contentMethod)) . '</div></div>';
 			}
             
             // Add close button
@@ -387,7 +394,22 @@ class Plugin_admin_bar extends Plugins {
     }
     
     protected static function getDebugsContent() {
-        return implode('<hr />', self::$debugs);
+        $content = '';
+        //var_dump(self::$debugs);
+        foreach(self::$debugs as $debug) {  
+            $content .= '<div class="' . self::prefix('debug-wrap') . '">';
+                $content .= '<div class="' . self::prefix('debug-title') . '">';
+                    $content .= $debug[2];
+                $content .= '</div>';
+                $content .= '<div class="' . self::prefix('debug-content') . '">';
+                    $content .= '<div class="' . self::prefix('debug-location') . '">';
+                        $content .= 'Line: ' . $debug[3][0]['line'] . ' - ' . $debug[3][0]['file'];
+                    $content .= '</div>';
+                    $content .= '<pre>' . print_r($debug[1], true) . '</pre>';
+                $content .= '</div>';
+            $content .= '</div>';
+        }
+        return $content;
     }
     
     protected static function getErrorsContent() {
@@ -472,6 +494,10 @@ class Plugin_admin_bar extends Plugins {
 		self::setUpTabs();
 		
 		self::$adminBar .= '</div>';
+    }
+    
+    protected static function onViewLoadTemplate($content) {
+        return str_replace('<html>', '<html class="admin-bar">', $content);
     }
 	
     /**
@@ -617,8 +643,9 @@ class Plugin_admin_bar extends Plugins {
 		
 	}
 
-	protected static function onAppDebug($default, $debug) {
-		self::$debugs[] = $default;
+	protected static function onAppDebug($default, $var, $name, $info) {
+		self::$debugs[] = func_get_args();
+        // Cancel default framework output
 		return false;
 	}
 	

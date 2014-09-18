@@ -13,6 +13,11 @@
         $('#admin-bar-close-panel').hide();
     });
     
+    // Show debug content
+    $('.admin-bar-debug-title').click(function() {
+        $(this).closest('.admin-bar-debug-wrap').find('.admin-bar-debug-content').toggle();
+    });
+    
     // Run updates
     $('#admin-bar-run-updates-button').click(function(event) {
         
