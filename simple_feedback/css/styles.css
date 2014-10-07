@@ -1,6 +1,7 @@
 /* POSITIONING */
 .simple-feedback-wrapper.simple-feedback-position-default {
     position: fixed;
+    z-index: 10001;
     bottom: 0;
     right: 25px;
 }
