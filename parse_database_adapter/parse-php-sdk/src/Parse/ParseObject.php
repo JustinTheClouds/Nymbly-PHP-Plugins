@@ -169,6 +169,11 @@ class ParseObject implements Encodable
     }
     return null;
   }
+    
+  public function getAll()
+  {
+    return $this->estimatedData;
+  }
 
   /**
    * Check if the object has a given key

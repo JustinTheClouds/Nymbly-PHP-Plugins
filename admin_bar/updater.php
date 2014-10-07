@@ -74,7 +74,14 @@ class Plugin_admin_bar_updater {
             
             $serverFile = $currentInfo['check'] . '?' . time();
             
-            $serverInfo = json_decode(file_get_contents($serverFile), true);
+            $curl = curl_init($serverFile);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            $resp = curl_exec($curl);
+            
+            // Skip this if no update version file found
+            if(curl_getinfo($curl, CURLINFO_HTTP_CODE) !== '200') continue;
+            
+            $serverInfo = json_decode($resp, true);
             if(!$serverInfo) continue;
             
             // Is the server version newer
@@ -87,7 +94,6 @@ class Plugin_admin_bar_updater {
         }
         
         return $updates;
-        
     }
 
     /**
@@ -268,7 +274,8 @@ class Plugin_admin_bar_updater {
             // Loop original directory
             foreach(glob($dirFrom . '/*') as $file) {
                 // Skip folders, they will be updated automatically when files are verified
-                if(empty(pathinfo(substr($file, strlen($dirFrom) + 1), PATHINFO_EXTENSION))) continue;
+                $ext = pathinfo(substr($file, strlen($dirFrom) + 1), PATHINFO_EXTENSION);
+                if(empty($ext)) continue;
                 // Try to read file from zip
                 if($zip->locateName(substr($file, strlen($dirFrom) + 1)) === false) {
                     // If file wasn't found in back up, return false
@@ -370,8 +377,9 @@ class Plugin_admin_bar_updater {
     private static function extractDirectoryTo($zip, $dir, $to) {
         for($i = 0; $i < $zip->numFiles; $i++) {
             $entry = $zip->getNameIndex($i);
+            $ext = pathinfo($entry, PATHINFO_EXTENSION);
             // Use strpos() to check if the entry name contains the directory we want to extract
-            if (strpos($entry, $dir) !== false && !empty(pathinfo($entry, PATHINFO_EXTENSION))) {
+            if (strpos($entry, $dir) !== false && !empty($ext)) {
                 // Create directory path if it does not exist
                 if(!is_dir(dirname($to . substr($entry, strlen($dir) + 1)))) mkdir(dirname($to . substr($entry, strlen($dir) + 1)), 0755, true);
                 // Extract the file to folder

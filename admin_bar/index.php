@@ -118,6 +118,9 @@ class Plugin_admin_bar extends Plugins {
 			self::unRegisterPlugin();
 			return;
 		}
+        
+        // Catch app start time
+        self::$startTime = microtime(true);
 		
         // Add styles
         self::setPluginSettings('styles', array(
@@ -129,7 +132,6 @@ class Plugin_admin_bar extends Plugins {
             '//code.jquery.com/jquery-1.11.0.min.js',
             'js/script.js'
         ));
-        
         
         // Check if we are running an admin_bar_action
         $action = self::get('action', 'request.get');
@@ -441,7 +443,22 @@ class Plugin_admin_bar extends Plugins {
      * Catch errors
      */
     protected static function onErrorHandleError($error) {
+        $error = self::customizeError($error);
         self::$errors[] = $error;
+        return $error;
+    }
+    
+    private static function customizeError($error) {
+        // Handle non static plugin events
+        if(strpos($error['errorstr'], 'non-static method Plugin_') !== false && strpos($error['errorstr'], 'should not be called statically') !== false) {
+            preg_match("/Plugin_(.+?)::(.+?)\(\)/", $error['errorstr'], $match);
+            $error['errorstr'] = sprintf(App::_('', 'The event, %s, for plugin, %s, should be defined as static'), $match[2], ucwords(str_replace('_', ' ', $match[1])));
+            $error['errfile'] = DIR_PLUGINS.DS.$match[1].DS.'index.php';
+            $class = new ReflectionClass('Plugin_'.$match[1]);
+            $method = $class->getMethod($match[2]);
+            $error['errline'] = $method->getStartLine();
+            $error['erroutput'] = Error::generateOutput($error);
+        }
         return $error;
     }
     
@@ -450,12 +467,6 @@ class Plugin_admin_bar extends Plugins {
      */
     protected static function onErrorDisplayErrors($errors) {
         return;
-    }
-    
-    protected static function onPluginsInit() {
-        
-        // Catch app start time
-        self::$startTime = microtime(true);
     }
     
     protected static function onBeforeViewDisplay() {
@@ -510,6 +521,15 @@ class Plugin_admin_bar extends Plugins {
 	protected static function onViewGetFooter($content) {
 		return $content . self::$adminBar;
 	}
+    
+    /**
+     * On fatal error shutdown, fallback to frameworks default error display
+     */
+    protected static function onErrorFatalShutdown($errors) {
+        foreach(self::$errors as $error) {
+            echo $error['erroutput'];
+        }
+    }
     
     /**
      * After view has been completely displayed, calculate and store app execution time
@@ -672,13 +692,6 @@ class Plugin_admin_bar extends Plugins {
 		';
 	
 	}
-    
-    /**
-     * Return text prefixed with the plugins name
-     */
-    private static function prefix($text) {
-        return str_replace('_', '-', strtolower(self::getPluginName() . '-' . $text));
-    }
     
     public static function storeData($name, $data) {
         if(file_exists(self::getPluginPath().DS.'data-logs.json')) {

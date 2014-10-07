@@ -1,0 +1,10 @@
+{
+    "version": "0.0.3",
+    "check": "https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/simple_feedback\/version.json",
+    "download": "https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/simple_feedback\/simple_feedback.zip?raw=true",
+    "updated": "06\/09\/2014",
+    "stamp": 1410031425,
+    "protect": [
+
+    ]
+}
