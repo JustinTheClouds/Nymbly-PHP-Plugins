@@ -415,7 +415,6 @@ class Plugin_admin_bar extends Plugins {
     }
     
     protected static function getErrorsContent() {
-        var_dump('test');
         $errors = '';
 		foreach(self::$errors as $error) {
 			$errors .= print_r($error['erroutput'], 1);
