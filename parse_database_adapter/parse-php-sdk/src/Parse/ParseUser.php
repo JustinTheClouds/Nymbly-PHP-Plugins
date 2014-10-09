@@ -272,7 +272,7 @@ class ParseUser extends ParseObject
    *
    * @throws ParseException
    */
-  public function save()
+  public function save($useMasterKey = false)
   {
     if ($this->getObjectId()) {
       parent::save();
