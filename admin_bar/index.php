@@ -415,6 +415,7 @@ class Plugin_admin_bar extends Plugins {
     }
     
     protected static function getErrorsContent() {
+        var_dump('test');
         $errors = '';
 		foreach(self::$errors as $error) {
 			$errors .= print_r($error['erroutput'], 1);
@@ -471,6 +472,22 @@ class Plugin_admin_bar extends Plugins {
     
     protected static function onBeforeViewDisplay() {
         
+        
+    }
+    
+    protected static function onViewLoadTemplate($content) {
+        return str_replace('<html>', '<html class="admin-bar">', $content);
+    }
+	
+    /**
+     * Append the admin bar to the content
+     * 
+     * @param <type> $content 
+     * 
+     * @return <type>
+     */
+	protected static function onViewGetFooter($content) {
+        
         if(App::get('method', 'request') != 'get' && App::get('method', 'request') != 'post') return;
         
         // Create stats content
@@ -505,20 +522,7 @@ class Plugin_admin_bar extends Plugins {
 		self::setUpTabs();
 		
 		self::$adminBar .= '</div>';
-    }
-    
-    protected static function onViewLoadTemplate($content) {
-        return str_replace('<html>', '<html class="admin-bar">', $content);
-    }
-	
-    /**
-     * Append the admin bar to the content
-     * 
-     * @param <type> $content 
-     * 
-     * @return <type>
-     */
-	protected static function onViewGetFooter($content) {
+        
 		return $content . self::$adminBar;
 	}
     
