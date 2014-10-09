@@ -79,7 +79,7 @@ class Plugin_admin_bar_updater {
             $resp = curl_exec($curl);
             
             // Skip this if no update version file found
-            if(curl_getinfo($curl, CURLINFO_HTTP_CODE) !== '200') continue;
+            if(curl_getinfo($curl, CURLINFO_HTTP_CODE) != '200') continue;
             
             $serverInfo = json_decode($resp, true);
             if(!$serverInfo) continue;
