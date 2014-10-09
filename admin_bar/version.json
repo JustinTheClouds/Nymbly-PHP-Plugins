@@ -1,9 +1,9 @@
 {
-    "version": "0.0.35",
+    "version": "0.0.36",
     "check": "https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/admin_bar\/version.json",
     "download": "https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/admin_bar\/admin_bar.zip?raw=true",
     "updated": "09\/10\/2014",
-    "stamp": 1412866105,
+    "stamp": 1412866426,
     "protect": [
         "data-logs.json",
         "current-status.json"
