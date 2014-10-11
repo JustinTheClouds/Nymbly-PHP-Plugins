@@ -423,7 +423,15 @@ class Plugin_admin_bar extends Plugins {
     }
     
     protected static function getEventsContent() {
-        return implode('<hr />', self::$events);
+        // TODO fix problem with html code being output in events tab
+        return;
+        $events = '';
+		foreach(self::$events as $event) {
+            array_walk_recursive($event, function(&$v) { $v = htmlspecialchars($v); });
+			$events .= $event;
+			//$events .= print_r($event, 1);
+		}
+		return $events;
     }
     
     protected static function getStatsContent() {
