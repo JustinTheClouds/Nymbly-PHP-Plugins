@@ -69,14 +69,20 @@ class Plugin_simple_feedback extends Plugins {
     
     private static function sendFeedback($data) {
         
-        $html  = '<h1>' . sprintf(self::_('Feedback Submitted From %s'), SEF::getBaseUrl()) . '</h2>';
-        $html .= '<h2>' . self::_(ucfirst($data['type'])) . '</h2>';
-        $html .= '<p>' . self::_(ucfirst($data['message'])) . '</p>';
+        $contents = Plugins::filter('onSimpleFeedbackSendFeedback', array(
+            'subject' => self::_('Feedback Submission From ' . SEF::getBaseUrl()),
+            'type'    => ucfirst($data['type']),
+            'message' => ucfirst($data['message'])
+        ));
+            
+        $html  = '<h1>' . $contents['subject'] . '</h1>';
+        $html .= '<h2>' . $contents['type'] . '</h2>';
+        $html .= $contents['message'];
         
         $data = array(
             'from' => self::getPluginSettings('emailFrom'),
             'to'   => self::getPluginSettings('emailTo'),
-            'subject' => self::_('Feedback Submission From ' . SEF::getBaseUrl()),
+            'subject' => 'test',
             'html' => $html
         );
 
