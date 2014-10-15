@@ -25,6 +25,10 @@ class Plugin_simple_feedback extends Plugins {
             'js/script.js'
         ));
         
+    }
+    
+    public static function onPluginsInit() {
+        
         $html = '<!-- Begin Simple Feedback Wrap --><div class="' . self::prefix('wrapper') . ' ' . self::prefix('position-' . self::getPluginSettings('position')) . '">';
         
             $html .= '<div class="' . self::prefix('button') . '">' . self::_('Feedback') . '</div>';
@@ -82,7 +86,7 @@ class Plugin_simple_feedback extends Plugins {
         $data = array(
             'from' => self::getPluginSettings('emailFrom'),
             'to'   => self::getPluginSettings('emailTo'),
-            'subject' => 'test',
+            'subject' => $contents['subject'],
             'html' => $html
         );
 
@@ -91,10 +95,12 @@ class Plugin_simple_feedback extends Plugins {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERPWD, 'api:' . self::getPluginSettings('mailgunAPIKey'));
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-        curl_exec($ch);
+        $resp = json_decode(curl_exec($ch), true);
         
         if($error = curl_error($ch)) {
             self::assign('error', $error);
+        } elseif(!$resp || !isset($resp['id'])) {
+            self::assign('error', self::_('An unknown error occurred.'));
         }
         
     }
