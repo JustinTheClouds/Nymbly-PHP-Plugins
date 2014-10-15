@@ -1,9 +1,9 @@
 {
-    "version": "0.0.5",
+    "version": "0.0.6",
     "check": "https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/simple_feedback\/version.json",
     "download": "https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/simple_feedback\/simple_feedback.zip?raw=true",
-    "updated": "07\/10\/2014",
-    "stamp": 1412652777,
+    "updated": "15\/10\/2014",
+    "stamp": 1413394633,
     "protect": [
 
     ]
