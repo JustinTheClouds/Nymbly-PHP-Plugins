@@ -162,7 +162,7 @@ class ParseObject implements Encodable
   {
     if (!$this->_isDataAvailable($key)) {
       throw new \Exception(
-          'ParseObject has no data for this key. Call fetch() to get the data.');
+          'ParseObject has no data for this key "' . $key . '". Call fetch() to get the data.');
     }
     if (isset($this->estimatedData[$key])) {
       return $this->estimatedData[$key];

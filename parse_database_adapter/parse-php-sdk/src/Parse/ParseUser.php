@@ -275,7 +275,7 @@ class ParseUser extends ParseObject
   public function save($useMasterKey = false)
   {
     if ($this->getObjectId()) {
-      parent::save();
+      parent::save($useMasterKey);
     } else {
       throw new ParseException(
         "You must call signUp to create a new User."

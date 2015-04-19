@@ -114,7 +114,7 @@ class Plugin_admin_bar extends Plugins {
     public function __construct() {
         
         // Unregister the plugin if it is not being used
-		if(!App::isDeveloper()) {
+		if(!App::isDeveloper() || (App::isLive() && self::getPluginSettings('disableWhenLive'))) {
 			self::unRegisterPlugin();
 			return;
 		}
@@ -397,7 +397,6 @@ class Plugin_admin_bar extends Plugins {
     
     protected static function getDebugsContent() {
         $content = '';
-        //var_dump(self::$debugs);
         foreach(self::$debugs as $debug) {  
             $content .= '<div class="' . self::prefix('debug-wrap') . '">';
                 $content .= '<div class="' . self::prefix('debug-title') . '">';
