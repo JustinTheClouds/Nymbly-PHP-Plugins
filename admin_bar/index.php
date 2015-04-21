@@ -209,6 +209,8 @@ class Plugin_admin_bar extends Plugins {
      */
     private static function checkForUpdates() {
         
+        return;
+        
         if(!self::get('updates_last_check')) {
         
             require_once(self::getPluginPath().DS.'updater.php');
@@ -668,7 +670,7 @@ class Plugin_admin_bar extends Plugins {
 				call_user_func_array(array('self', 'logEvent'), $args);
 			}
 		} else {
-			call_user_func_array(array('self', 'logEvent'), $args);
+			//call_user_func_array(array('self', 'logEvent'), $args);
 		}
 		
 	}
