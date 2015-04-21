@@ -6,7 +6,7 @@
     right: 25px;
 }
 .simple-feedback-wrapper.simple-feedback-position-default.active {
-    bottom: 350px;
+    
 }
     .simple-feedback-wrapper.simple-feedback-position-default .simple-feedback-content {
         position: absolute;
@@ -39,7 +39,6 @@
         box-shadow: inset 0 5px 15px rgba(255,255,255,.6);
     }
     .simple-feedback-wrapper .simple-feedback-content {
-        height: 300px;
         width: 500px;
         background: rgba(255,255,255,.9);
         color: #454545;
@@ -65,7 +64,7 @@
             display: block;
             margin: 0 0 7px 0;
         }
-        .simple-feedback-wrapper .simple-feedback-content select, .simple-feedback-wrapper .simple-feedback-content textarea {
+        .simple-feedback-wrapper .simple-feedback-content input, .simple-feedback-wrapper .simple-feedback-content select, .simple-feedback-wrapper .simple-feedback-content textarea {
             padding: 7px;
             margin: 0 0 15px 0;
             border: 1px solid rgba(0,0,0,.3);
@@ -73,8 +72,7 @@
             color: #343434;
             width: 100%;
             max-width: 100%;
-            -moz-box-sizing: border-box;
-                 box-sizing: border-box;
+            box-sizing: border-box;
         }
         .simple-feedback-wrapper .simple-feedback-content input[type="submit"] {
             background: rgba(0,0,0,.9);
