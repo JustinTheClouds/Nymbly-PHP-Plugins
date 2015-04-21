@@ -39,6 +39,64 @@ class Plugin_admin_bar_updater {
     }
     
     /**
+     * Checks local system for plugin updates instead of global repo
+     * 
+     * This is useful for plugin development or if you'd like to fork a plugin
+     * and to develope and test within different projects on your local system
+     * 
+     * @return Array Returns the updates array
+     */
+    public static function checkLocal($dir) {
+        
+        $updates = array(
+            'core' => false,
+            'total' => 0
+        );
+        
+        // Check core for updates
+        $currentInfo = json_decode(file_get_contents(DIR_ROOT.DS.'version.json'), true);
+        $serverInfo = json_decode(file_get_contents($dir.DS.'version.json'), true);
+        
+        // Is the server version newer
+        if(version_compare($serverInfo['version'], $currentInfo['version']) === 1) {
+            $serverInfo['current'] = $currentInfo;
+            $updates['core']['library'] = $serverInfo;
+            $updates['total']++;
+        }
+        
+        // Check for plugin updates
+        $plugins = Plugins::getEnabledPlugins();
+        
+        if(!$plugins) return $updates;
+        
+        $updates['plugins'] = array();
+        foreach($plugins as $plugin => $configs) {
+            
+            if(!file_exists(DIR_PLUGINS.DS.$plugin.DS.'version.json')) continue;
+            $currentInfo = json_decode(file_get_contents(DIR_PLUGINS.DS.$plugin.DS.'version.json'), true);
+            
+            $serverFile = $dir.DS.'application'.DS.$plugin.DS.'version.json';
+            
+            // Skip this if no update version file found
+            if(!file_exists($serverFile)) continue;
+            
+            $serverInfo = json_decode($serverFile, true);
+            if(!$serverInfo) continue;
+            
+            // Is the server version newer
+            if(version_compare($serverInfo['version'], $currentInfo['version']) === 1) {
+                $serverInfo['current'] = $currentInfo;
+                $updates['plugins'][$plugin] = $serverInfo;
+                $updates['total']++;
+            }
+            
+        }
+        
+        return $updates;
+        
+    }
+    
+    /**
      * Checks if any updates are available
      * 
      * @returns Array Returns the updates array

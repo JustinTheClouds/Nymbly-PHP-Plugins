@@ -210,13 +210,16 @@ class Plugin_admin_bar extends Plugins {
      */
     private static function checkForUpdates() {
         
-        return;
-        
         if(!self::get('updates_last_check')) {
         
             require_once(self::getPluginPath().DS.'updater.php');
             
-            $updates = Plugin_admin_bar_updater::check();
+            // TODO Make this a per plugin config as well as a global config
+            if(self::getPluginSettings('updateFromLocalDir')) {
+                $updates = Plugin_admin_bar_updater::checkLocal(self::getPluginSettings('updateFromLocalDir'));
+            } else {
+                $updates = Plugin_admin_bar_updater::check();
+            }
             
             // TODO Set timeout var for 12 hours
             self::set('updates_last_check', $updates, 'session', 15);
