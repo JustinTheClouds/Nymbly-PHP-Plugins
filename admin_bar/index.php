@@ -179,6 +179,7 @@ class Plugin_admin_bar extends Plugins {
     
     private static function checkUpdatesAction() {
         self::_unset('updates_last_check');
+        
     }
     
     private static function generatePluginAction() {
