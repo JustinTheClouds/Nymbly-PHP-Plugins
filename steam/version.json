@@ -1,0 +1,10 @@
+{
+    "version": "0.0.4",
+    "check": "https:\/\/raw.githubusercontent.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/master\/steam\/version.json",
+    "download": "https:\/\/github.com\/JustinTheClouds\/Nymbly-PHP-Plugins\/blob\/master\/steam\/steam.zip?raw=true",
+    "updated": "21\/04\/2015",
+    "stamp": 1429578880,
+    "protect": [
+
+    ]
+}
